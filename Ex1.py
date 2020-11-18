@@ -2,11 +2,11 @@ import numpy as np
 import random
 
 action_space = [1, 2, 3, 4]  # 1 for action up, 2 for down, 3 for left and 4 for right.
-rewards = np.array([[0, 0, 0, 1], [0, 0, 0, -100], [0, 0, 0, 0]])  # reward matrix
+rewards = np.array([[0, 0, 0, 1], [0, 0, 0, -1], [0, 0, 0, 0]])  # reward matrix
 rows = rewards.shape[0]
 cols = rewards.shape[1]
 gamma = 0.9
-alpha = 0.2
+alpha = 0.3
 
 
 class QLearning:
@@ -21,13 +21,12 @@ class QLearning:
                 for a in action_space:
                     self.q_values[(x, y)][a] = 0  # Q value is a dict of dict
 
-    def run_grid(self):
+    def run_q(self):
         epsilon = 0.3
         for episode in range(self.episodes):
-
             self.state = (2, 0)  # starting position down left
-            self.done = False
-            for step in range(10):
+            done = False
+            while done == False:
                 exp_rate = random.uniform(0, 1)
                 # Exploration-Exploitation-TradeOff
                 if exp_rate > epsilon:  # take max q-value
@@ -41,9 +40,35 @@ class QLearning:
                                                     alpha*(reward + gamma*self.get_q_max(self.q_values[new_state])[1])
                 self.state = new_state
                 if self.is_done(self.state):
-                    break
+                    done = True
 
         return self.q_values
+
+    def run_sarsa(self):
+        epsilon = 0.3
+        for episode in range(self.episodes):
+            self.state = (2, 0)  # starting position down left
+            done = False
+            while done == False:
+                action = self.choose_action(self.state, epsilon)
+                new_state, reward = self.simulator(self.state, action)
+                action2 = self.choose_action(new_state, epsilon)
+                # Update Q-Table for Q(s,a)
+                self.q_values[self.state][action] = (1 - alpha) * self.q_values[self.state][action] + \
+                                                    alpha * (reward + gamma * self.q_values[new_state][action2])
+                self.state = new_state
+                if self.is_done(self.state):
+                    done = True
+
+        return self.q_values
+
+    def choose_action(self, state, epsilon):
+        exp_rate = random.uniform(0, 1)
+        # Exploration-Exploitation-TradeOff
+        if exp_rate > epsilon:  # take max q-value
+            return self.get_q_max(self.q_values[state])[0]
+        else:  # take random action
+            return np.random.choice(action_space)
 
     def simulator(self, s, a):
         s_next = self.get_next_states(s, a)
@@ -104,10 +129,16 @@ class QLearning:
 
 
 def main():
-    q_table = QLearning(1000).run_grid()
-    print(q_table)
+    print('\n_____________________Q-LEARNING_____________________\n')
+    q_table = QLearning(500).run_q()
+    print_table(q_table)
+    print('\n_____________________SARSA_____________________\n')
+    q_table = QLearning(500).run_sarsa()
+    print_table(q_table)
 
-    # ACTIONS TO TAKE
+
+def print_table(q_table):
+    print(q_table)
     grid = np.zeros((3, 4), dtype=int)
     for state in q_table:
         if state in [(0, 3), (1, 3), (1, 1)]:
