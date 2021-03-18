@@ -1,1 +1,4 @@
-# Q_learning #SARSA #Gridworld #RL #DynamicProgramming 
+# Q_learning 
+SARSA 
+Gridworld 
+#RL #DynamicProgramming 
